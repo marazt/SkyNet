@@ -30,7 +30,7 @@ namespace SkyNet.Client
         {
             Initialize(clientId, clientSecret, callbackUrl, proxy);
 
-            this.CheckIfAccessTokenIsSet(null);
+            this.CheckIfAccessTokenIsSet(accessToken);
 
             SetUserToken(new UserToken { Access_Token = accessToken, Refresh_Token = refreshToken });
         }
@@ -201,6 +201,7 @@ namespace SkyNet.Client
 
         private void SetUserToken(UserToken token)
         {
+            CredentialsStorage.Save(token);
             _refreshToken = token.Refresh_Token;
             _restContentClient.Authenticator = new AccessTokenAuthenticator(token.Access_Token);
         }
