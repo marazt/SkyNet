@@ -12,15 +12,16 @@ namespace SkyNet.Tests.Client
     [TestFixture]
     public class ClientTests
     {
-        private readonly SkyNet.Client.Client _client = new SkyNet.Client.Client(TestInfo.ApiKey, TestInfo.ApiSecret, TestInfo.CallbackUrl, TestInfo.AccessToken, TestInfo.RefreshToken);
-        
+        private readonly SkyNet.Client.Client _client = null; //new SkyNet.Client.Client(TestInfo.ApiKey, TestInfo.ApiSecret, SkyNet.Client.Client.DefaultRedirectUrl, TestInfo.AccessToken, TestInfo.RefreshToken);
+
         [Test]
         public void GetRootFolder()
         {
-            var contents = _client.GetContents(Folder.Root);
+            var c = new SkyNet.Client.Client(TestInfo.ApiKey, TestInfo.ApiSecret, SkyNet.Client.Client.DefaultRedirectUrl, null);
+            var contents = c.GetContents(Folder.Root);
             Assert.That(contents.Any(f => f.Name.Equals("Public")));
         }
-        
+
         [Test]
         public void CreateDeleteFolder()
         {
@@ -43,7 +44,7 @@ namespace SkyNet.Tests.Client
         [Test]
         public void WriteNewFileStream()
         {
-            var content = new byte[] {1, 2, 3};
+            var content = new byte[] { 1, 2, 3 };
             using (var stream = new MemoryStream(content))
             {
                 var writtenFile = _client.Write(Folder.Root, stream, "testFile", "text/plain");
@@ -101,7 +102,7 @@ namespace SkyNet.Tests.Client
                 Assert.That(copy.Name, Is.EqualTo("theFile"));
                 Assert.That(copy.Parent_Id, Is.EqualTo(folder.Id));
             }
-            finally 
+            finally
             {
                 _client.Delete(folder.Id);
             }

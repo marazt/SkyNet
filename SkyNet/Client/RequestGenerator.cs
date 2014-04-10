@@ -11,7 +11,7 @@ namespace SkyNet.Client
 {
     public class RequestGenerator
     {
-        private static readonly UTF8Encoding UTF8Encoder = new UTF8Encoding(); 
+        private static readonly UTF8Encoding UTF8Encoder = new UTF8Encoding();
 
         private const string OAuthResource = "oauth20_{verb}.srf";
         private const string AuthorizeVerb = "authorize";
@@ -19,7 +19,7 @@ namespace SkyNet.Client
 
         public RestRequest Authorize(string clientId, string callbackUrl, IEnumerable<Scope> requestedScopes)
         {
-            var request = new RestRequest(Method.GET) {Resource = OAuthResource};
+            var request = new RestRequest(Method.GET) { Resource = OAuthResource };
             request.AddParameter("verb", AuthorizeVerb, ParameterType.UrlSegment);
             request.AddParameter("client_id", clientId);
             request.AddParameter("scope", string.Join(" ", requestedScopes.OrderBy(s => s).Select(s => s.GetDescription())));
@@ -30,7 +30,7 @@ namespace SkyNet.Client
 
         public RestRequest GetAccessToken(string clientId, string clientSecret, string callbackUrl, string authorizationCode)
         {
-            var request = new RestRequest(Method.POST) {Resource = OAuthResource};
+            var request = new RestRequest(Method.POST) { Resource = OAuthResource };
             request.AddParameter("verb", TokenVerb, ParameterType.UrlSegment);
             request.AddParameter("client_id", clientId);
             request.AddParameter("redirect_uri", callbackUrl);
@@ -42,7 +42,7 @@ namespace SkyNet.Client
 
         public RestRequest RefreshAccessToken(string clientId, string clientSecret, string callbackUrl, string refreshToken)
         {
-            var request = new RestRequest(Method.POST) {Resource = OAuthResource};
+            var request = new RestRequest(Method.POST) { Resource = OAuthResource };
             request.AddParameter("verb", TokenVerb, ParameterType.UrlSegment);
             request.AddParameter("client_id", clientId);
             request.AddParameter("redirect_uri", callbackUrl);
@@ -61,8 +61,8 @@ namespace SkyNet.Client
             }
             else
             {
-                request = ContentRequest(Method.GET, "{id}");
-                request.AddUrlSegment("id", id);
+                request = ContentRequest(Method.GET, id);
+
             }
             return request;
         }
@@ -76,8 +76,7 @@ namespace SkyNet.Client
             }
             else
             {
-                request = ContentRequest(Method.GET, "{id}/files");
-                request.AddUrlSegment("id", id);
+                request = ContentRequest(Method.GET, id + "/files");
             }
             return request;
         }
@@ -87,9 +86,9 @@ namespace SkyNet.Client
             Require.Argument("parentFolderId", parentFolderId);
             Require.Argument("name", name);
 
-            var request = ContentRequest(Method.POST, "{id}");
-            request.AddUrlSegment("id", parentFolderId);
-            request.AddBody(new {name, description});
+            var request = ContentRequest(Method.POST, parentFolderId);
+
+            request.AddBody(new { name, description });
             return request;
         }
 
@@ -113,8 +112,8 @@ namespace SkyNet.Client
             Require.Argument("id", parentFolderId);
             Require.Argument("name", name);
 
-            var request = ContentRequest(Method.POST, "{id}/files");
-            request.AddUrlSegment("id", parentFolderId);
+            var request = ContentRequest(Method.POST, parentFolderId + "/files");
+
             request.AddFile("file", content.CopyTo, Encode(name), contentType);
             return request;
         }
@@ -123,8 +122,8 @@ namespace SkyNet.Client
         {
             Require.Argument("id", id);
 
-            var request = ContentRequest(Method.GET, "{id}/content");
-            request.AddUrlSegment("id", id);
+            var request = ContentRequest(Method.GET, id + "/content");
+
             request.AddHeader("Range", string.Format("bytes={0}-{1}", startByte, endByte));
             return request;
         }
@@ -140,9 +139,9 @@ namespace SkyNet.Client
             Require.Argument("sourceId", sourceId);
             Require.Argument("newParentId", newParentId);
 
-            var request = ContentRequest(Method.POST, "{id}");
-            request.AddUrlSegment("id", sourceId);
-            request.AddBody(new{destination= newParentId});
+            var request = ContentRequest(Method.POST, sourceId);
+
+            request.AddBody(new { destination = newParentId });
             return request;
         }
 
@@ -151,9 +150,9 @@ namespace SkyNet.Client
             Require.Argument("id", id);
             Require.Argument("name", name);
 
-            var request = ContentRequest(Method.PUT, "{id}");
-            request.AddUrlSegment("id", id);
-            request.AddBody(new {name});
+            var request = ContentRequest(Method.PUT, id);
+
+            request.AddBody(new { name });
             return request;
         }
 
@@ -172,7 +171,7 @@ namespace SkyNet.Client
         {
             Require.Argument("resource", resource);
 
-            var request = new RestRequest(method) {Resource = Append(resource), RequestFormat = DataFormat.Json};
+            var request = new RestRequest(method) { Resource = Append(resource), RequestFormat = DataFormat.Json };
             return request;
         }
 

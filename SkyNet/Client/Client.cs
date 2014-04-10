@@ -5,29 +5,66 @@ using System.Web;
 using Microsoft.Win32;
 using RestSharp;
 using RestSharp.Deserializers;
+using SkyNet.Exception;
 using SkyNet.Model;
+using SkyNet.Util;
 using File = SkyNet.Model.File;
 
 namespace SkyNet.Client
 {
     public class Client
     {
-        private readonly string _clientId;
-        private readonly string _clientSecret;
-        private readonly string _callbackUrl;
+        private string _clientId;
+        private string _clientSecret;
+        private string _callbackUrl;
         private string _refreshToken;
-        private readonly RestClient _restAuthorizationClient;
-        private readonly RestClient _restContentClient;
-        private readonly RequestGenerator _requestGenerator;
+        private RestClient _restAuthorizationClient;
+        private RestClient _restContentClient;
+        private RequestGenerator _requestGenerator;
 
         private const string OAuthUrlBase = @"https://login.live.com";
         private const string ContentUrlBase = @"https://apis.live.net/v5.0/";
+        public const string DefaultRedirectUrl = @"https://login.live.com/oauth20_desktop.srf";
 
-        public Client(string clientId, string clientSecret, string callbackUrl, string accessToken = null, string refreshToken = null)
+        public Client(string clientId, string clientSecret, string callbackUrl, string accessToken, string refreshToken, WebProxy proxy = null)
+        {
+            Initialize(clientId, clientSecret, callbackUrl, proxy);
+
+            this.CheckIfAccessTokenIsSet(null);
+
+            SetUserToken(new UserToken { Access_Token = accessToken, Refresh_Token = refreshToken });
+        }
+
+        public Client(string clientId, string clientSecret, string callbackUrl, string code, WebProxy proxy = null)
+        {
+            Initialize(clientId, clientSecret, callbackUrl, proxy);
+
+            var accessToken = this.GetAccessToken(code);
+
+            SetUserToken(new UserToken { Access_Token = accessToken.Access_Token, Refresh_Token = string.Empty });
+        }
+
+        public Client(string clientId, string clientSecret, string callbackUrl, WebProxy proxy = null)
+        {
+            Initialize(clientId, clientSecret, callbackUrl, proxy);
+
+            var userToken = CredentialsStorage.Load();
+
+            if (userToken == null)
+            {
+                this.CheckIfAccessTokenIsSet(null);
+            }
+
+            SetUserToken(new UserToken { Access_Token = userToken.Access_Token, Refresh_Token = userToken.Refresh_Token });
+        }
+
+        private void Initialize(string clientId, string clientSecret, string callbackUrl, WebProxy proxy)
         {
             _clientId = clientId;
             _clientSecret = clientSecret;
             _callbackUrl = callbackUrl;
+
+
 
             _restAuthorizationClient = new RestClient(OAuthUrlBase);
             _restAuthorizationClient.ClearHandlers();
@@ -37,9 +74,22 @@ namespace SkyNet.Client
             _restContentClient.ClearHandlers();
             _restContentClient.AddHandler("*", new JsonDeserializer());
 
-            _requestGenerator = new RequestGenerator();
+            if (proxy != null)
+            {
+                _restAuthorizationClient.Proxy = proxy;
+                _restContentClient.Proxy = proxy;
+            }
 
-            SetUserToken(new UserToken {Access_Token = accessToken, Refresh_Token = refreshToken});
+            _requestGenerator = new RequestGenerator();
+        }
+
+        private void CheckIfAccessTokenIsSet(string accessToken)
+        {
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                var url = this.GetAuthorizationRequestUrl(new List<Scope> { Scope.SkyDrive, Scope.OfflineAccess, Scope.SkyDriveUpdate });
+                throw new SkynetBusinessException(string.Format("Access token is missing. Follow this link '{0}' to generate it and access code and set it as parameter. Note: Set appropriate scopes.", url));
+            }
         }
 
         public string GetAuthorizationRequestUrl(IEnumerable<Scope> requestedScopes)
@@ -173,7 +223,7 @@ namespace SkyNet.Client
             CheckForError(restResponse);
         }
 
-        private T ExecuteContentRequestAsPost<T>(IRestRequest restRequest, string method) where T:new()
+        private T ExecuteContentRequestAsPost<T>(IRestRequest restRequest, string method) where T : new()
         {
             var restResponse = _restContentClient.ExecuteAsPost<T>(restRequest, method);
             CheckForError(restResponse);
@@ -195,7 +245,7 @@ namespace SkyNet.Client
                 || statusCode == HttpStatusCode.BadGateway
                 || statusCode == HttpStatusCode.BadRequest
                 || statusCode == HttpStatusCode.Unauthorized)
-                throw new HttpException((int) statusCode, restResponse.Content);
+                throw new HttpException((int)statusCode, restResponse.Content);
         }
 
         private static T ExecuteRequest<T>(RestClient restContentClient, IRestRequest restRequest) where T : new()
@@ -213,7 +263,7 @@ namespace SkyNet.Client
 
         private static void Copy(Stream input, Stream output)
         {
-            var buffer = new byte[16*1024];
+            var buffer = new byte[16 * 1024];
             int len;
             while ((len = input.Read(buffer, 0, buffer.Length)) > 0)
             {

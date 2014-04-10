@@ -59,6 +59,7 @@
     <Compile Include="Client\Client.cs" />
     <Compile Include="Client\RequestGenerator.cs" />
     <Compile Include="Client\Scope.cs" />
+    <Compile Include="Exception\SkynetBusinessException.cs" />
     <Compile Include="Model\UserToken.cs" />
     <Compile Include="Model\Album.cs" />
     <Compile Include="Model\Audio.cs" />
@@ -71,6 +72,7 @@
     <Compile Include="Model\SharedWith.cs" />
     <Compile Include="Model\Video.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\CredentialsStorage.cs" />
     <Compile Include="Util\EnumExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
